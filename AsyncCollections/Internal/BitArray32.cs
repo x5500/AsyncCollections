@@ -6,17 +6,14 @@ using System.Threading.Tasks;
 
 namespace HellBrick.Collections.Internal
 {
-	internal struct BitArray32 : IEquatable<BitArray32>
+	internal readonly struct BitArray32 : IEquatable<BitArray32>
 	{
 		public const int BitCapacity = sizeof( uint ) * 8;
 		public static readonly BitArray32 Empty = new BitArray32();
 
 		private readonly uint _value;
 
-		public BitArray32( uint value )
-		{
-			_value = value;
-		}
+		public BitArray32( uint value ) => _value = value;
 
 		public BitArray32 WithBitSet( int index ) => new BitArray32( _value | GetMask( index ) );
 
@@ -45,7 +42,7 @@ namespace HellBrick.Collections.Internal
 
 		public override int GetHashCode() => EqualityComparer<uint>.Default.GetHashCode( _value );
 		public bool Equals( BitArray32 other ) => EqualityComparer<uint>.Default.Equals( _value, other._value );
-		public override bool Equals( object obj ) => obj is BitArray32 && Equals( (BitArray32) obj );
+		public override bool Equals( object obj ) => obj is BitArray32 array && Equals( array );
 
 		public static bool operator ==( BitArray32 x, BitArray32 y ) => x.Equals( y );
 		public static bool operator !=( BitArray32 x, BitArray32 y ) => !x.Equals( y );

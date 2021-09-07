@@ -18,10 +18,7 @@ namespace HellBrick.Collections.Internal
 		private BitArray32 _awaitersCreated = BitArray32.Empty;
 		private CancellationRegistrationHolder _cancellationRegistrationHolder;
 
-		public ExclusiveCompletionSourceGroup()
-		{
-			Task = _realCompetionSource.Task.WithYield();
-		}
+		public ExclusiveCompletionSourceGroup() => Task = _realCompetionSource.Task.WithYield();
 
 		public Task<AnyResult<T>> Task { get; }
 
@@ -45,14 +42,14 @@ namespace HellBrick.Collections.Internal
 					{
 						ExclusiveCompletionSourceGroup<T> group = state as ExclusiveCompletionSourceGroup<T>;
 
-						/// There are 2 cases here.
-						/// 
-						/// #1: The token is canceled before <see cref="UnlockCompetition(CancellationToken)"/> is called, but after the token is validated higher up the stack.
-						/// Is this is the case, the cancellation callbak will be called synchronously while <see cref="_completedSource"/> is still set to <see cref="State.Locked"/>.
-						/// So the competition will never progress to <see cref="State.Unlocked"/> and we have to check for this explicitly.
-						/// 
-						/// #2: We're canceled after the competition has been unlocked.
-						/// If this is the case, we have a simple race against the awaiters to progress from <see cref="State.Unlocked"/> to <see cref="State.Canceled"/>.
+						// There are 2 cases here.
+						// 
+						// #1: The token is canceled before <see cref="UnlockCompetition(CancellationToken)"/> is called, but after the token is validated higher up the stack.
+						// Is this is the case, the cancellation callbak will be called synchronously while <see cref="_completedSource"/> is still set to <see cref="State.Locked"/>.
+						// So the competition will never progress to <see cref="State.Unlocked"/> and we have to check for this explicitly.
+						// 
+						// #2: We're canceled after the competition has been unlocked.
+						// If this is the case, we have a simple race against the awaiters to progress from <see cref="State.Unlocked"/> to <see cref="State.Canceled"/>.
 						if ( group.TryTransitionToCanceledIfStateIs( State.Locked ) || group.TryTransitionToCanceledIfStateIs( State.Unlocked ) )
 							group._realCompetionSource.SetCanceled();
 					},
@@ -80,10 +77,7 @@ namespace HellBrick.Collections.Internal
 
 		private class CancellationRegistrationHolder
 		{
-			public CancellationRegistrationHolder( CancellationTokenRegistration registration )
-			{
-				Registration = registration;
-			}
+			public CancellationRegistrationHolder( CancellationTokenRegistration registration ) => Registration = registration;
 
 			public CancellationTokenRegistration Registration { get; }
 		}
@@ -135,7 +129,7 @@ namespace HellBrick.Collections.Internal
 			public ValueTask<T> Task => _neverEndingTask;
 		}
 
-		public struct Factory : IAwaiterFactory<T>, IEquatable<Factory>
+		public readonly struct Factory : IAwaiterFactory<T>, IEquatable<Factory>
 		{
 			private readonly ExclusiveCompletionSourceGroup<T> _group;
 			private readonly int _index;
@@ -163,7 +157,7 @@ namespace HellBrick.Collections.Internal
 			}
 
 			public bool Equals( Factory other ) => EqualityComparer<ExclusiveCompletionSourceGroup<T>>.Default.Equals( _group, other._group ) && EqualityComparer<int>.Default.Equals( _index, other._index );
-			public override bool Equals( object obj ) => obj is Factory && Equals( (Factory) obj );
+			public override bool Equals( object obj ) => obj is Factory factory && Equals( factory );
 
 			public static bool operator ==( Factory x, Factory y ) => x.Equals( y );
 			public static bool operator !=( Factory x, Factory y ) => !x.Equals( y );

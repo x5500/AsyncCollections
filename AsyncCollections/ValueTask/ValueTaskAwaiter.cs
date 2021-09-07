@@ -13,37 +13,31 @@ using System.Threading.Tasks;
 namespace System.Runtime.CompilerServices
 {
 	/// <summary>Provides an awaiter for a <see cref="ValueTask{TResult}"/>.</summary>
-	public struct ValueTaskAwaiter<TResult> : ICriticalNotifyCompletion
+	public readonly struct ValueTaskAwaiter<TResult> : ICriticalNotifyCompletion, IEquatable<ValueTaskAwaiter<TResult>>
 	{
 		/// <summary>The value being awaited.</summary>
 		private readonly ValueTask<TResult> _value;
 
 		/// <summary>Initializes the awaiter.</summary>
 		/// <param name="value">The value to be awaited.</param>
-		internal ValueTaskAwaiter( ValueTask<TResult> value ) { _value = value; }
+		internal ValueTaskAwaiter( ValueTask<TResult> value ) => _value = value;
 
 		/// <summary>Gets whether the <see cref="ValueTask{TResult}"/> has completed.</summary>
-		public bool IsCompleted { get { return _value.IsCompleted; } }
+		public bool IsCompleted => _value.IsCompleted;
 
 		/// <summary>Gets the result of the ValueTask.</summary>
-		public TResult GetResult()
-		{
-			return _value._task == null ?
-				 _value._result :
-				 _value._task.GetAwaiter().GetResult();
-		}
+		public TResult GetResult() => _value.AsTask() == null ? _value.Result : _value.AsTask().GetAwaiter().GetResult();
 
 		/// <summary>Schedules the continuation action for this ValueTask.</summary>
-		public void OnCompleted( Action continuation )
-		{
-			_value.AsTask().ConfigureAwait( continueOnCapturedContext: true ).GetAwaiter().OnCompleted( continuation );
-		}
+		public void OnCompleted( Action continuation ) => _value.AsTask().ConfigureAwait( continueOnCapturedContext: true ).GetAwaiter().OnCompleted( continuation );
 
 		/// <summary>Schedules the continuation action for this ValueTask.</summary>
-		public void UnsafeOnCompleted( Action continuation )
-		{
-			_value.AsTask().ConfigureAwait( continueOnCapturedContext: true ).GetAwaiter().UnsafeOnCompleted( continuation );
-		}
+		public void UnsafeOnCompleted( Action continuation ) => _value.AsTask().ConfigureAwait( continueOnCapturedContext: true ).GetAwaiter().UnsafeOnCompleted( continuation );
+		public override int GetHashCode() => _value.GetHashCode();
+		public bool Equals( ValueTaskAwaiter<TResult> other ) => _value == other._value;
+		public override bool Equals( object obj ) => obj is ValueTaskAwaiter<TResult> other && Equals( other );
+		public static bool operator ==( ValueTaskAwaiter<TResult> x, ValueTaskAwaiter<TResult> y ) => x.Equals( y );
+		public static bool operator !=( ValueTaskAwaiter<TResult> x, ValueTaskAwaiter<TResult> y ) => !x.Equals( y );
 	}
 }
 

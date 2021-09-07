@@ -60,7 +60,7 @@ namespace HellBrick.Collections
 		public int AwaiterCount => ComputeCount( Volatile.Read( ref _awaiterTail ), Volatile.Read( ref _itemTail ), s => s.AwaiterCount );
 		public int Count => ComputeCount( Volatile.Read( ref _itemTail ), Volatile.Read( ref _awaiterTail ), s => s.ItemCount );
 
-		private int ComputeCount( Segment myTail, Segment otherTail, Func<Segment, int> countExtractor )
+		private static int ComputeCount( Segment myTail, Segment otherTail, Func<Segment, int> countExtractor )
 		{
 			if ( myTail.SegmentID < otherTail.SegmentID )
 				return 0;
@@ -197,24 +197,21 @@ namespace HellBrick.Collections
 
 			private Segment _nextPooledSegment = null;
 
-			public Segment( AsyncQueue<T> queue )
-			{
-				_queue = queue;
-			}
+			public Segment( AsyncQueue<T> queue ) => _queue = queue;
 
 			public Segment VolatileNext => Volatile.Read( ref _next );
 
 			public long SegmentID
 			{
-				get { return Volatile.Read( ref _segmentID ); }
-				set { Volatile.Write( ref _segmentID, value ); }
+				get => Volatile.Read( ref _segmentID );
+				set => Volatile.Write( ref _segmentID, value );
 			}
 
 			public int ItemCount => Math.Max( 0, ItemAwaiterBalance );
 			public int AwaiterCount => Math.Max( 0, -ItemAwaiterBalance );
 
 			private int ItemAwaiterBalance => SlotReferenceToCount( ref _itemIndex ) - SlotReferenceToCount( ref _awaiterIndex );
-			private int SlotReferenceToCount( ref int slotReference ) => Math.Min( SegmentSize, Volatile.Read( ref slotReference ) + 1 );
+			private static int SlotReferenceToCount( ref int slotReference ) => Math.Min( SegmentSize, Volatile.Read( ref slotReference ) + 1 );
 
 			public bool TryAdd( T item )
 				=> TryAdd( item, Interlocked.Increment( ref _itemIndex ) );
@@ -228,12 +225,12 @@ namespace HellBrick.Collections
 				_items[ slot ] = item;
 				bool wonSlot = Interlocked.CompareExchange( ref _slotStates[ slot ], SlotState.HasItem, SlotState.None ) == SlotState.None;
 
-				/// 1. If we have won the slot, the item is considered successfully added.
-				/// 2. Otherwise, it's up to the result of <see cref="IAwaiter{T}.TrySetResult(T)"/>.
-				///    Awaiter could have been canceled by now, and if it has, we should return false to insert item again into another slot.
-				///    We also can't blindly read awaiter from the slot, because <see cref="TryTakeAsync(CancellationToken)"/> captures slot *before* filling in the awaiter.
-				///    So we have to spin until it is available.
-				///    And regardless of the awaiter state, we mark the slot as finished because both item and awaiter have visited it.
+				// 1. If we have won the slot, the item is considered successfully added.
+				// 2. Otherwise, it's up to the result of <see cref="IAwaiter{T}.TrySetResult(T)"/>.
+				//    Awaiter could have been canceled by now, and if it has, we should return false to insert item again into another slot.
+				//    We also can't blindly read awaiter from the slot, because <see cref="TryTakeAsync(CancellationToken)"/> captures slot *before* filling in the awaiter.
+				//    So we have to spin until it is available.
+				//    And regardless of the awaiter state, we mark the slot as finished because both item and awaiter have visited it.
 				bool success = wonSlot || TrySetAwaiterResultAndClearSlot( item, slot );
 
 				HandleLastSlotCapture( slot, wonSlot, ref _queue._itemTail );
@@ -272,9 +269,9 @@ namespace HellBrick.Collections
 			{
 				ValueTask<T> result;
 
-				/// The order here differs from what <see cref="TryAdd(T)"/> does: we capture the slot *before* inserting an awaiter.
-				/// We do it to avoid allocating an awaiter / registering the cancellation that we're not gonna need in case we lose.
-				/// This means <see cref="TryAdd(T)"/> can see the default awaiter value, but it is easily solved by spinning until the awaiter is assigned.
+				// The order here differs from what <see cref="TryAdd(T)"/> does: we capture the slot *before* inserting an awaiter.
+				// We do it to avoid allocating an awaiter / registering the cancellation that we're not gonna need in case we lose.
+				// This means <see cref="TryAdd(T)"/> can see the default awaiter value, but it is easily solved by spinning until the awaiter is assigned.
 				bool wonSlot = Interlocked.CompareExchange( ref _slotStates[ slot ], SlotState.HasAwaiter, SlotState.None ) == SlotState.None;
 				if ( wonSlot )
 				{
@@ -311,6 +308,8 @@ namespace HellBrick.Collections
 			///    So we lose the reference to it by advancing <see cref="AsyncQueue{T}._head"/>.
 			/// 5. If we've lost the last slot, we pool it to be reused later.
 			/// </remarks>
+			/// <param name="slot"></param>
+			/// <param name="wonSlot"></param>
 			/// <param name="tailReference">Either <see cref="AsyncQueue{T}._itemTail"/> or <see cref="AsyncQueue{T}._awaiterTail"/>, whichever we're working on right now.</param>
 			private void HandleLastSlotCapture( int slot, bool wonSlot, ref Segment tailReference )
 			{
@@ -332,11 +331,11 @@ namespace HellBrick.Collections
 				if ( !TryDecreaseBalance() )
 					return;
 
-				/// We reset <see cref="_next"/> so it could be GC-ed if it doesn't make it to the pool.
-				/// It's safe to do so because:
-				/// 1. <see cref="TryDecreaseBalance"/> guarantees that the whole queue is not being enumerated right now.
-				/// 2. By this time <see cref="_head"/> is already rewritten so future enumerators can't possibly reference the current segment.
-				/// The rest of the clean-up is *NOT* safe to do here, see <see cref="ResetAfterTakingFromPool"/> for details.
+				// We reset <see cref="_next"/> so it could be GC-ed if it doesn't make it to the pool.
+				// It's safe to do so because:
+				// 1. <see cref="TryDecreaseBalance"/> guarantees that the whole queue is not being enumerated right now.
+				// 2. By this time <see cref="_head"/> is already rewritten so future enumerators can't possibly reference the current segment.
+				// The rest of the clean-up is *NOT* safe to do here, see <see cref="ResetAfterTakingFromPool"/> for details.
 				Volatile.Write( ref _next, null );
 				PushToPool();
 				Interlocked.Increment( ref _queue._enumerationPoolingBalance );
@@ -406,11 +405,11 @@ namespace HellBrick.Collections
 			/// </remarks>
 			private Segment ResetAfterTakingFromPool()
 			{
-				/// We must reset <see cref="_slotStates"/> before <see cref="_awaiterIndex"/> and <see cref="_itemIndex"/>.
-				/// Otherwise appenders could successfully increment a pointer and mess with the slots before they are ready to be messed with.
+				// We must reset <see cref="_slotStates"/> before <see cref="_awaiterIndex"/> and <see cref="_itemIndex"/>.
+				// Otherwise appenders could successfully increment a pointer and mess with the slots before they are ready to be messed with.
 				for ( int i = 0; i < SegmentSize; i++ )
 				{
-					/// We can't simply overwrite the state, because it's possible that the slot loser has not finished <see cref="ClearSlot(int)"/> yet.
+					// We can't simply overwrite the state, because it's possible that the slot loser has not finished <see cref="ClearSlot(Int32)"/> yet.
 					SpinWait spin = new SpinWait();
 					while ( Interlocked.CompareExchange( ref _slotStates[ i ], SlotState.None, SlotState.Cleared ) != SlotState.Cleared )
 						spin.SpinOnce();
@@ -490,11 +489,11 @@ namespace HellBrick.Collections
 				{
 					if ( _currentSlot == Int32.MinValue )
 					{
-						/// Items in slots 0 .. <see cref="_awaiterIndex"/> are taken by awaiters, so they are no longer considered stored in the queue.
-						_currentSlot = _segment.SlotReferenceToCount( ref _segment._awaiterIndex );
+						// Items in slots 0 .. <see cref="_awaiterIndex"/> are taken by awaiters, so they are no longer considered stored in the queue.
+						_currentSlot = Segment.SlotReferenceToCount( ref _segment._awaiterIndex );
 
-						/// <see cref="_itemIndex"/> is the last slot an item actually exists at at the moment, so we shouldn't enumerate through the default values that are stored further.
-						_effectiveLength = _segment.SlotReferenceToCount( ref _segment._itemIndex );
+						// <see cref="_itemIndex"/> is the last slot an item actually exists at at the moment, so we shouldn't enumerate through the default values that are stored further.
+						_effectiveLength = Segment.SlotReferenceToCount( ref _segment._itemIndex );
 					}
 
 					while ( _currentSlot < _effectiveLength )

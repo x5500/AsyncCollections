@@ -9,7 +9,7 @@ namespace HellBrick.Collections
 	/// <summary>
 	/// Represents an item retrieved from one of the asynchronous collections.
 	/// </summary>
-	public struct AnyResult<T> : IEquatable<AnyResult<T>>
+	public readonly struct AnyResult<T> : IEquatable<AnyResult<T>>
 	{
 		public AnyResult( T value, int collectionIndex )
 		{
@@ -40,8 +40,7 @@ namespace HellBrick.Collections
 		}
 
 		public bool Equals( AnyResult<T> other ) => EqualityComparer<T>.Default.Equals( Value, other.Value ) && EqualityComparer<int>.Default.Equals( CollectionIndex, other.CollectionIndex );
-		public override bool Equals( object obj ) => obj is AnyResult<T> && Equals( (AnyResult<T>) obj );
-
+		public override bool Equals( object obj ) => obj is AnyResult<T> result && Equals( result );
 		public static bool operator ==( AnyResult<T> x, AnyResult<T> y ) => x.Equals( y );
 		public static bool operator !=( AnyResult<T> x, AnyResult<T> y ) => !x.Equals( y );
 	}

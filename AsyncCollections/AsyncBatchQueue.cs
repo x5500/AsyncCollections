@@ -17,7 +17,7 @@ namespace HellBrick.Collections
 		private readonly AsyncQueue<IReadOnlyList<T>> _batchQueue = new AsyncQueue<IReadOnlyList<T>>();
 
 		/// <summary>
-		/// Initializes a new instance of <see cref="AsyncBatchQueue"/> that produces batches of a specified size.
+		/// Initializes a new instance AsyncQueue{IReadOnlyList{T}} that produces batches of a specified size.
 		/// </summary>
 		/// <param name="batchSize">Amount of the items contained in an output batch.</param>
 		public AsyncBatchQueue( int batchSize )

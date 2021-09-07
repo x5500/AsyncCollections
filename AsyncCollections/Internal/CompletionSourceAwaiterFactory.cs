@@ -7,14 +7,11 @@ using System.Threading.Tasks;
 
 namespace HellBrick.Collections.Internal
 {
-	internal struct CompletionSourceAwaiterFactory<T> : IAwaiterFactory<T>, IEquatable<CompletionSourceAwaiterFactory<T>>
+	internal readonly struct CompletionSourceAwaiterFactory<T> : IAwaiterFactory<T>, IEquatable<CompletionSourceAwaiterFactory<T>>
 	{
 		private readonly CancellationToken _cancellationToken;
 
-		public CompletionSourceAwaiterFactory( CancellationToken cancellationToken )
-		{
-			_cancellationToken = cancellationToken;
-		}
+		public CompletionSourceAwaiterFactory( CancellationToken cancellationToken ) => _cancellationToken = cancellationToken;
 
 		public IAwaiter<T> CreateAwaiter() => new CompletionSourceAwaiter( _cancellationToken );
 
@@ -54,7 +51,7 @@ namespace HellBrick.Collections.Internal
 
 		public override int GetHashCode() => EqualityComparer<CancellationToken>.Default.GetHashCode( _cancellationToken );
 		public bool Equals( CompletionSourceAwaiterFactory<T> other ) => _cancellationToken == other._cancellationToken;
-		public override bool Equals( object obj ) => obj is CompletionSourceAwaiterFactory<T> && Equals( (CompletionSourceAwaiterFactory<T>) obj );
+		public override bool Equals( object obj ) => obj is CompletionSourceAwaiterFactory<T> factory && Equals( factory );
 
 		public static bool operator ==( CompletionSourceAwaiterFactory<T> x, CompletionSourceAwaiterFactory<T> y ) => x.Equals( y );
 		public static bool operator !=( CompletionSourceAwaiterFactory<T> x, CompletionSourceAwaiterFactory<T> y ) => !x.Equals( y );

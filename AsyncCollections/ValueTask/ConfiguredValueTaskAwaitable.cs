@@ -16,7 +16,7 @@ namespace System.Runtime.CompilerServices
 	/// <summary>Provides an awaitable type that enables configured awaits on a <see cref="ValueTask{TResult}"/>.</summary>
 	/// <typeparam name="TResult">The type of the result produced.</typeparam>
 	[StructLayout( LayoutKind.Auto )]
-	public struct ConfiguredValueTaskAwaitable<TResult>
+	public readonly struct ConfiguredValueTaskAwaitable<TResult> : IEquatable<ConfiguredValueTaskAwaitable<TResult>>
 	{
 		/// <summary>The wrapped <see cref="ValueTask{TResult}"/>.</summary>
 		private readonly ValueTask<TResult> _value;
@@ -35,14 +35,11 @@ namespace System.Runtime.CompilerServices
 		}
 
 		/// <summary>Returns an awaiter for this <see cref="ConfiguredValueTaskAwaitable{TResult}"/> instance.</summary>
-		public ConfiguredValueTaskAwaiter GetAwaiter()
-		{
-			return new ConfiguredValueTaskAwaiter( _value, _continueOnCapturedContext );
-		}
+		public ConfiguredValueTaskAwaiter GetAwaiter() => new ConfiguredValueTaskAwaiter( _value, _continueOnCapturedContext );
 
 		/// <summary>Provides an awaiter for a <see cref="ConfiguredValueTaskAwaitable{TResult}"/>.</summary>
 		[StructLayout( LayoutKind.Auto )]
-		public struct ConfiguredValueTaskAwaiter : ICriticalNotifyCompletion
+		public readonly struct ConfiguredValueTaskAwaiter : ICriticalNotifyCompletion, IEquatable<ConfiguredValueTaskAwaiter>
 		{
 			/// <summary>The value being awaited.</summary>
 			private readonly ValueTask<TResult> _value;
@@ -59,28 +56,30 @@ namespace System.Runtime.CompilerServices
 			}
 
 			/// <summary>Gets whether the <see cref="ConfiguredValueTaskAwaitable{TResult}"/> has completed.</summary>
-			public bool IsCompleted { get { return _value.IsCompleted; } }
+			public bool IsCompleted => _value.IsCompleted;
 
 			/// <summary>Gets the result of the ValueTask.</summary>
-			public TResult GetResult()
-			{
-				return _value._task == null ?
-					 _value._result :
-					 _value._task.GetAwaiter().GetResult();
-			}
+			public TResult GetResult() => _value.AsTask() == null ? _value.Result :_value.AsTask().GetAwaiter().GetResult();
 
 			/// <summary>Schedules the continuation action for the <see cref="ConfiguredValueTaskAwaitable{TResult}"/>.</summary>
-			public void OnCompleted( Action continuation )
-			{
-				_value.AsTask().ConfigureAwait( _continueOnCapturedContext ).GetAwaiter().OnCompleted( continuation );
-			}
+			public void OnCompleted( Action continuation ) => _value.AsTask().ConfigureAwait( _continueOnCapturedContext ).GetAwaiter().OnCompleted( continuation );
 
 			/// <summary>Schedules the continuation action for the <see cref="ConfiguredValueTaskAwaitable{TResult}"/>.</summary>
-			public void UnsafeOnCompleted( Action continuation )
-			{
-				_value.AsTask().ConfigureAwait( _continueOnCapturedContext ).GetAwaiter().UnsafeOnCompleted( continuation );
-			}
+			public void UnsafeOnCompleted( Action continuation ) => _value.AsTask().ConfigureAwait( _continueOnCapturedContext ).GetAwaiter().UnsafeOnCompleted( continuation );
+			public override int GetHashCode() => (_value, _continueOnCapturedContext).GetHashCode();
+			public bool Equals( ConfiguredValueTaskAwaiter other ) => (_value, _continueOnCapturedContext) == (other._value, other._continueOnCapturedContext);
+			public override bool Equals( object obj ) => obj is ConfiguredValueTaskAwaiter other && Equals( other );
+
+			public static bool operator ==( ConfiguredValueTaskAwaiter x, ConfiguredValueTaskAwaiter y ) => x.Equals( y );
+			public static bool operator !=( ConfiguredValueTaskAwaiter x, ConfiguredValueTaskAwaiter y ) => !x.Equals( y );
 		}
+
+		public override int GetHashCode() => (_value, _continueOnCapturedContext).GetHashCode();
+		public bool Equals( ConfiguredValueTaskAwaitable<TResult> other ) => (_value, _continueOnCapturedContext) == (other._value, other._continueOnCapturedContext);
+		public override bool Equals( object obj ) => obj is ConfiguredValueTaskAwaitable<TResult> other && Equals( other );
+
+		public static bool operator ==( ConfiguredValueTaskAwaitable<TResult> x, ConfiguredValueTaskAwaitable<TResult> y ) => x.Equals( y );
+		public static bool operator !=( ConfiguredValueTaskAwaitable<TResult> x, ConfiguredValueTaskAwaitable<TResult> y ) => !x.Equals( y );
 	}
 }
 

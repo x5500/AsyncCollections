@@ -120,7 +120,7 @@ namespace HellBrick.Collections.Test
 		public void EnumeratorDoesNotReturnItemsThatHaveBeenRemovedBetweenMoveNextCalls()
 		{
 			InsertItems( 1, 2, 3 );
-			using ( var enumerator = Collection.GetEnumerator() )
+			using ( AsyncQueue<int>.Enumerator enumerator = Collection.GetEnumerator() )
 			{
 				enumerator.MoveNext().Should().BeTrue();
 				enumerator.Current.Should().Be( 1 );

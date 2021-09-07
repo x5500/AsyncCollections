@@ -20,7 +20,7 @@ namespace HellBrick.Collections.Test
 		public async Task ReturnsLowPriorityIfNoHighPriorityIsAvailable()
 		{
 			Collection.Add( 42, 1 );
-			var result = await Collection.TakeAsync().ConfigureAwait( true );
+			PrioritizedItem<int> result = await Collection.TakeAsync().ConfigureAwait( true );
 			result.Should().Be( new PrioritizedItem<int>( 42, 1 ) );
 		}
 
@@ -30,7 +30,7 @@ namespace HellBrick.Collections.Test
 			Collection.Add( 42, 0 );
 			Collection.Add( 999, 1 );
 
-			var result = await Collection.TakeAsync().ConfigureAwait( true );
+			PrioritizedItem<int> result = await Collection.TakeAsync().ConfigureAwait( true );
 			result.Should().Be( new PrioritizedItem<int>( 42, 0 ) );
 		}
 	}

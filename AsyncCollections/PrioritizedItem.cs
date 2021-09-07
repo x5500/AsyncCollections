@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace HellBrick.Collections
 {
-	public struct PrioritizedItem<T> : IEquatable<PrioritizedItem<T>>
+	public readonly struct PrioritizedItem<T> : IEquatable<PrioritizedItem<T>>
 	{
 		public PrioritizedItem( T item, int priority )
 		{
@@ -32,7 +32,7 @@ namespace HellBrick.Collections
 		}
 
 		public bool Equals( PrioritizedItem<T> other ) => EqualityComparer<T>.Default.Equals( Item, other.Item ) && EqualityComparer<int>.Default.Equals( Priority, other.Priority );
-		public override bool Equals( object obj ) => obj is PrioritizedItem<T> && Equals( (PrioritizedItem<T>) obj );
+		public override bool Equals( object obj ) => obj is PrioritizedItem<T> item && Equals( item );
 
 		public static bool operator ==( PrioritizedItem<T> x, PrioritizedItem<T> y ) => x.Equals( y );
 		public static bool operator !=( PrioritizedItem<T> x, PrioritizedItem<T> y ) => !x.Equals( y );

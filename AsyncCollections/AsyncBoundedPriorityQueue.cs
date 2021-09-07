@@ -91,7 +91,7 @@ namespace HellBrick.Collections
 			return prioritizedItemTask.IsCompletedSuccessfully ? new ValueTask<T>( prioritizedItemTask.Result.Item ) : new ValueTask<T>( UnwrapAsync( prioritizedItemTask ) );
 		}
 
-		private async Task<T> UnwrapAsync( ValueTask<PrioritizedItem<T>> prioritizedItemTask )
+		private static async Task<T> UnwrapAsync( ValueTask<PrioritizedItem<T>> prioritizedItemTask )
 		{
 			PrioritizedItem<T> result = await prioritizedItemTask.ConfigureAwait( false );
 			return result.Item;
@@ -123,8 +123,7 @@ namespace HellBrick.Collections
 			{
 				for ( int priority = 0; priority < _itemQueues.Length; priority++ )
 				{
-					T itemValue;
-					if ( _itemQueues[ priority ].TryDequeue( out itemValue ) )
+					if ( _itemQueues[ priority ].TryDequeue( out T itemValue ) )
 					{
 						item = new PrioritizedItem<T>( itemValue, priority );
 						return true;
@@ -144,20 +143,11 @@ namespace HellBrick.Collections
 			bool ICollection.IsSynchronized => false;
 			object ICollection.SyncRoot => null;
 
-			void ICollection.CopyTo( Array array, int index )
-			{
-				throw new NotSupportedException();
-			}
+			void ICollection.CopyTo( Array array, int index ) => throw new NotSupportedException();
 
-			void IProducerConsumerCollection<PrioritizedItem<T>>.CopyTo( PrioritizedItem<T>[] array, int index )
-			{
-				throw new NotSupportedException();
-			}
+			void IProducerConsumerCollection<PrioritizedItem<T>>.CopyTo( PrioritizedItem<T>[] array, int index ) => throw new NotSupportedException();
 
-			PrioritizedItem<T>[] IProducerConsumerCollection<PrioritizedItem<T>>.ToArray()
-			{
-				throw new NotSupportedException();
-			}
+			PrioritizedItem<T>[] IProducerConsumerCollection<PrioritizedItem<T>>.ToArray() => throw new NotSupportedException();
 		}
 	}
 }
